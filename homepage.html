@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXUS // HOME</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cyan: #00f5ff;
+    --cyan-dim: #00a8b5;
+    --magenta: #ff00aa;
+    --gold: #ffd700;
+    --dark: #020810;
+    --panel: rgba(0, 20, 40, 0.75);
+    --border: rgba(0, 245, 255, 0.2);
+    --glow: 0 0 20px rgba(0,245,255,0.4), 0 0 60px rgba(0,245,255,0.1);
+    --glow-mg: 0 0 20px rgba(255,0,170,0.4), 0 0 60px rgba(255,0,170,0.1);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--dark);
+    color: var(--cyan);
+    font-family: 'Share Tech Mono', monospace;
+    min-height: 100vh;
+    overflow: hidden;
+    position: relative;
+    cursor: crosshair;
+  }
+
+  /* ── CANVAS STARFIELD ── */
+  #starfield {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+  }
+
+  /* ── NEBULA LAYERS ── */
+  .nebula {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.18;
+    pointer-events: none;
+    z-index: 1;
+    animation: drift 20s ease-in-out infinite alternate;
+  }
+  .nebula-1 { width: 600px; height: 400px; background: radial-gradient(ellipse, #0050ff, transparent); top: -10%; left: -5%; animation-duration: 25s; }
+  .nebula-2 { width: 500px; height: 500px; background: radial-gradient(ellipse, #ff00aa, transparent); bottom: -10%; right: -5%; animation-duration: 30s; animation-delay: -10s; }
+  .nebula-3 { width: 400px; height: 300px; background: radial-gradient(ellipse, #00f5ff, transparent); top: 30%; left: 40%; opacity: 0.1; animation-duration: 18s; animation-delay: -5s; }
+
+  @keyframes drift {
+    from { transform: translate(0, 0) scale(1); }
+    to   { transform: translate(40px, 30px) scale(1.1); }
+  }
+
+  /* ── SCAN LINE OVERLAY ── */
+  .scanlines {
+    position: fixed;
+    inset: 0;
+    z-index: 2;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent,
+      transparent 3px,
+      rgba(0,0,0,0.08) 3px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+  }
+
+  /* ── GRID OVERLAY ── */
+  .grid-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    background-image:
+      linear-gradient(rgba(0,245,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,245,255,0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+  }
+
+  /* ── MAIN LAYOUT ── */
+  .container {
+    position: relative;
+    z-index: 10;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    gap: 36px;
+  }
+
+  /* ── HUD CORNERS ── */
+  .hud-corner {
+    position: fixed;
+    width: 60px; height: 60px;
+    z-index: 20;
+    opacity: 0.6;
+  }
+  .hud-corner::before, .hud-corner::after {
+    content: '';
+    position: absolute;
+    background: var(--cyan);
+  }
+  .hud-corner::before { width: 2px; height: 100%; }
+  .hud-corner::after  { width: 100%; height: 2px; }
+  .hud-tl { top: 20px; left: 20px; }
+  .hud-tr { top: 20px; right: 20px; transform: scaleX(-1); }
+  .hud-bl { bottom: 20px; left: 20px; transform: scaleY(-1); }
+  .hud-br { bottom: 20px; right: 20px; transform: scale(-1); }
+
+  /* ── STATUS BAR TOP ── */
+  .status-bar {
+    position: fixed;
+    top: 28px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    display: flex;
+    gap: 30px;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    color: rgba(0,245,255,0.5);
+    text-transform: uppercase;
+  }
+  .status-bar span { display: flex; align-items: center; gap: 6px; }
+  .status-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--cyan);
+    animation: blink 2s ease-in-out infinite;
+  }
+  .status-dot.mg { background: var(--magenta); animation-delay: 0.7s; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  /* ── CLOCK ── */
+  .clock-section { text-align: center; }
+
+  .clock-time {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(3.5rem, 9vw, 7rem);
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    color: #fff;
+    text-shadow: var(--glow), 0 0 2px #fff;
+    line-height: 1;
+    animation: flicker 8s ease-in-out infinite;
+  }
+  @keyframes flicker {
+    0%,95%,100% { opacity: 1; }
+    96% { opacity: 0.85; }
+    97% { opacity: 1; }
+    98% { opacity: 0.9; }
+  }
+
+  .clock-date {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 300;
+    letter-spacing: 0.4em;
+    color: var(--cyan-dim);
+    margin-top: 8px;
+    text-transform: uppercase;
+  }
+
+  .clock-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.3em;
+    color: rgba(0,245,255,0.35);
+    margin-top: 4px;
+    text-transform: uppercase;
+  }
+
+  /* ── DIVIDER ── */
+  .divider {
+    width: 100%;
+    max-width: 700px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--cyan), var(--magenta), var(--cyan), transparent);
+    opacity: 0.4;
+  }
+
+  /* ── SEARCH ── */
+  .search-wrapper {
+    width: 100%;
+    max-width: 620px;
+    position: relative;
+  }
+
+  .search-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.35em;
+    color: rgba(0,245,255,0.4);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    display: block;
+  }
+
+  .search-box {
+    display: flex;
+    align-items: center;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 0 20px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    backdrop-filter: blur(12px);
+  }
+  .search-box:focus-within {
+    border-color: rgba(0,245,255,0.6);
+    box-shadow: var(--glow);
+  }
+
+  .search-icon {
+    color: var(--cyan-dim);
+    font-size: 1rem;
+    margin-right: 12px;
+    flex-shrink: 0;
+  }
+
+  .search-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #fff;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1rem;
+    letter-spacing: 0.05em;
+    padding: 16px 0;
+    caret-color: var(--cyan);
+  }
+  .search-input::placeholder { color: rgba(0,245,255,0.25); }
+
+  .search-btn {
+    background: none;
+    border: 1px solid rgba(0,245,255,0.3);
+    color: var(--cyan);
+    font-family: 'Orbitron', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    padding: 8px 16px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.2s;
+    border-radius: 1px;
+  }
+  .search-btn:hover {
+    background: rgba(0,245,255,0.1);
+    box-shadow: 0 0 12px rgba(0,245,255,0.3);
+  }
+
+  /* ── QUICK LINKS ── */
+  .links-section { width: 100%; max-width: 680px; }
+
+  .links-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.35em;
+    color: rgba(0,245,255,0.4);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    display: block;
+  }
+
+  .links-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px;
+  }
+
+  .link-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 18px 12px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    text-decoration: none;
+    color: rgba(0,245,255,0.8);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    backdrop-filter: blur(10px);
+    transition: all 0.25s ease;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+  }
+  .link-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(0,245,255,0.08), transparent);
+    opacity: 0;
+    transition: opacity 0.25s;
+  }
+  .link-card:hover {
+    border-color: rgba(0,245,255,0.5);
+    color: #fff;
+    box-shadow: var(--glow);
+    transform: translateY(-2px);
+  }
+  .link-card:hover::before { opacity: 1; }
+
+  .link-icon { font-size: 1.4rem; }
+  .link-name { font-size: 0.72rem; }
+
+  /* ── BOTTOM STATUS ── */
+  .bottom-bar {
+    position: fixed;
+    bottom: 28px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    font-size: 0.6rem;
+    letter-spacing: 0.25em;
+    color: rgba(0,245,255,0.3);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  /* ── PULSE RING (decorative) ── */
+  .pulse-ring {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 800px; height: 800px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,245,255,0.04);
+    pointer-events: none;
+    z-index: 1;
+    animation: pulse-out 6s ease-out infinite;
+  }
+  .pulse-ring:nth-child(2) { animation-delay: 2s; }
+  .pulse-ring:nth-child(3) { animation-delay: 4s; }
+  @keyframes pulse-out {
+    0%   { transform: translate(-50%,-50%) scale(0.3); opacity: 0.5; }
+    100% { transform: translate(-50%,-50%) scale(1.8); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+
+<div class="nebula nebula-1"></div>
+<div class="nebula nebula-2"></div>
+<div class="nebula nebula-3"></div>
+<div class="grid-overlay"></div>
+<div class="scanlines"></div>
+
+<div class="pulse-ring"></div>
+<div class="pulse-ring"></div>
+<div class="pulse-ring"></div>
+
+<!-- HUD Corners -->
+<div class="hud-corner hud-tl"></div>
+<div class="hud-corner hud-tr"></div>
+<div class="hud-corner hud-bl"></div>
+<div class="hud-corner hud-br"></div>
+
+<!-- Status Bar -->
+<div class="status-bar">
+  <span><span class="status-dot"></span>SYS ONLINE</span>
+  <span><span class="status-dot mg"></span>NET SECURE</span>
+  <span><span class="status-dot"></span>NEXUS v4.1</span>
+</div>
+
+<!-- Main Content -->
+<div class="container">
+
+  <!-- Clock -->
+  <div class="clock-section">
+    <div class="clock-time" id="clock">00:00:00</div>
+    <div class="clock-date" id="date">Loading...</div>
+    <div class="clock-label">// GALACTIC STANDARD TIME //</div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Search -->
+  <div class="search-wrapper">
+    <span class="search-label">// QUERY INTERFACE</span>
+    <div class="search-box">
+      <span class="search-icon">⌕</span>
+      <input class="search-input" id="searchInput" type="text" placeholder="INITIATE SEARCH PROTOCOL..." autocomplete="off" />
+      <button class="search-btn" onclick="doSearch()">EXECUTE</button>
+    </div>
+  </div>
+
+  <!-- Quick Links -->
+  <div class="links-section">
+    <span class="links-label">// NAVIGATION NODES</span>
+    <div class="links-grid">
+      <a class="link-card" href="https://gmail.com">
+        <span class="link-icon">✉</span>
+        <span class="link-name">MAIL</span>
+      </a>
+      <a class="link-card" href="https://github.com">
+        <span class="link-icon">⌥</span>
+        <span class="link-name">GITHUB</span>
+      </a>
+      <a class="link-card" href="https://youtube.com">
+        <span class="link-icon">▶</span>
+        <span class="link-name">STREAM</span>
+      </a>
+      <a class="link-card" href="https://reddit.com">
+        <span class="link-icon">◈</span>
+        <span class="link-name">REDDIT</span>
+      </a>
+      <a class="link-card" href="https://news.ycombinator.com">
+        <span class="link-icon">⬡</span>
+        <span class="link-name">HACKER NEWS</span>
+      </a>
+      <a class="link-card" href="https://claude.ai">
+        <span class="link-icon">✦</span>
+        <span class="link-name">CLAUDE AI</span>
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<!-- Bottom Bar -->
+<div class="bottom-bar" id="coords">LAT: 30.0152° N &nbsp;|&nbsp; LON: 97.8771° W &nbsp;|&nbsp; SECTOR 7-G</div>
+
+<script>
+// ── STARFIELD ──
+const canvas = document.getElementById('starfield');
+const ctx = canvas.getContext('2d');
+let W, H, stars = [], shootingStars = [];
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+
+function initStars() {
+  stars = [];
+  for (let i = 0; i < 280; i++) {
+    stars.push({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: Math.random() * 1.4 + 0.2,
+      speed: Math.random() * 0.15 + 0.02,
+      opacity: Math.random() * 0.7 + 0.3,
+      twinkleSpeed: Math.random() * 0.02 + 0.005,
+      twinklePhase: Math.random() * Math.PI * 2,
+      color: Math.random() > 0.92 ? '#ff9966' : Math.random() > 0.85 ? '#aaddff' : '#ffffff'
+    });
+  }
+}
+
+function spawnShootingStar() {
+  if (Math.random() < 0.004) {
+    shootingStars.push({
+      x: Math.random() * W * 0.8,
+      y: Math.random() * H * 0.4,
+      len: Math.random() * 120 + 80,
+      speed: Math.random() * 8 + 6,
+      opacity: 1,
+      angle: Math.PI / 6 + Math.random() * 0.3
+    });
+  }
+}
+
+let t = 0;
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  t += 0.01;
+
+  // Stars
+  stars.forEach(s => {
+    const tw = 0.5 + 0.5 * Math.sin(t * s.twinkleSpeed * 60 + s.twinklePhase);
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    ctx.fillStyle = s.color;
+    ctx.globalAlpha = s.opacity * (0.5 + 0.5 * tw);
+    ctx.fill();
+    s.y += s.speed;
+    if (s.y > H) { s.y = 0; s.x = Math.random() * W; }
+  });
+
+  // Shooting stars
+  spawnShootingStar();
+  shootingStars = shootingStars.filter(ss => ss.opacity > 0);
+  shootingStars.forEach(ss => {
+    const dx = Math.cos(ss.angle) * ss.len;
+    const dy = Math.sin(ss.angle) * ss.len;
+    const grad = ctx.createLinearGradient(ss.x, ss.y, ss.x + dx, ss.y + dy);
+    grad.addColorStop(0, `rgba(255,255,255,0)`);
+    grad.addColorStop(1, `rgba(0,245,255,${ss.opacity})`);
+    ctx.beginPath();
+    ctx.moveTo(ss.x, ss.y);
+    ctx.lineTo(ss.x + dx, ss.y + dy);
+    ctx.strokeStyle = grad;
+    ctx.globalAlpha = ss.opacity;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ss.x += Math.cos(ss.angle) * ss.speed;
+    ss.y += Math.sin(ss.angle) * ss.speed;
+    ss.opacity -= 0.015;
+  });
+
+  ctx.globalAlpha = 1;
+  requestAnimationFrame(draw);
+}
+
+resize();
+initStars();
+draw();
+window.addEventListener('resize', () => { resize(); initStars(); });
+
+// ── CLOCK ──
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const s = String(now.getSeconds()).padStart(2,'0');
+  document.getElementById('clock').textContent = `${h}:${m}:${s}`;
+
+  const days = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'];
+  const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  const day = days[now.getDay()];
+  const mon = months[now.getMonth()];
+  const dt = String(now.getDate()).padStart(2,'0');
+  const yr = now.getFullYear();
+  document.getElementById('date').textContent = `${day}  ·  ${mon} ${dt}  ·  ${yr}`;
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// ── SEARCH ──
+function doSearch() {
+  const q = document.getElementById('searchInput').value.trim();
+  if (!q) return;
+  const url = q.startsWith('http') ? q : `https://www.google.com/search?q=${encodeURIComponent(q)}`;
+  window.location.href = url;
+}
+document.getElementById('searchInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doSearch();
+});
+
+// ── MOUSE PARALLAX on nebulas ──
+document.addEventListener('mousemove', e => {
+  const xf = (e.clientX / window.innerWidth - 0.5) * 20;
+  const yf = (e.clientY / window.innerHeight - 0.5) * 20;
+  document.querySelectorAll('.nebula').forEach((n, i) => {
+    const d = (i + 1) * 0.4;
+    n.style.transform = `translate(${xf * d}px, ${yf * d}px)`;
+  });
+});
+</script>
+</body>
+</html>
